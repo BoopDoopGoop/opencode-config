@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/oh-my-opencode-slim@latest/oh-my-opencode-slim.schema.json",
-  "preset": "custom",
+  "preset": "openai",
   "presets": {
     "openai": {
       "orchestrator": {
@@ -45,54 +45,6 @@
       },
       "fixer": {
         "model": "openai/gpt-5.6-luna",
-        "variant": "high",
-        "skills": [],
-        "mcps": []
-      }
-    },
-    "custom": {
-      "orchestrator": {
-        "model": "openai/gpt-5.6-sol",
-        "variant": "high",
-        "skills": [
-          "*"
-        ],
-        "mcps": [
-          "*",
-          "!context7"
-        ]
-      },
-      "oracle": {
-        "model": "openai/gpt-6-astra",
-        "variant": "high",
-        "skills": [
-          "simplify"
-        ],
-        "mcps": []
-      },
-      "librarian": {
-        "model": "openai/gpt-5.6-terra",
-        "variant": "high",
-        "skills": [],
-        "mcps": [
-          "context7",
-          "gh_grep"
-        ]
-      },
-      "explorer": {
-        "model": "openai/gpt-5.6-terra",
-        "variant": "high",
-        "skills": [],
-        "mcps": []
-      },
-      "designer": {
-        "model": "anthropic/claude-fable-5-1",
-        "variant": "high",
-        "skills": [],
-        "mcps": []
-      },
-      "fixer": {
-        "model": "openai/gpt-5.6-terra",
         "variant": "high",
         "skills": [],
         "mcps": []
