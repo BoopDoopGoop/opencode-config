@@ -9,7 +9,7 @@ OPENCODE_DIR="$HOME/.config/opencode"
 OPENCODE_LINKS=(opencode.jsonc oh-my-opencode-slim.json tui.json)
 
 error() {
-  printf '[agent-config] ERROR: %s\n' "$*" >&2
+  printf '[opencode-config] ERROR: %s\n' "$*" >&2
 }
 
 require_path() {
@@ -44,4 +44,4 @@ done
 
 install_opencode_links
 
-printf '[agent-config] Installed OpenCode configuration. Restart OpenCode to apply changes.\n'
+printf '[opencode-config] Installed OpenCode configuration. Restart OpenCode to apply changes.\n'

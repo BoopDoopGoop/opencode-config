@@ -21,13 +21,13 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/BoopDoopGoop/agent-config.git",
+    "url": "git+https://github.com/BoopDoopGoop/opencode-config.git",
     "directory": "packages/opencode-btw"
   },
   "bugs": {
-    "url": "https://github.com/BoopDoopGoop/agent-config/issues"
+    "url": "https://github.com/BoopDoopGoop/opencode-config/issues"
   },
-  "homepage": "https://github.com/BoopDoopGoop/agent-config/tree/main/packages/opencode-btw",
+  "homepage": "https://github.com/BoopDoopGoop/opencode-config/tree/main/packages/opencode-btw",
   "scripts": {
     "test": "bun test",
     "build": "bun build src/index.ts --outdir dist --target node --format esm",
