@@ -9,7 +9,7 @@
     },
     "build": {
       "model": "openai/gpt-5.6-luna-fast",
-      "variant": "low"
+      "variant": "medium"
     },
     "explore": {
       "disable": true
@@ -28,7 +28,11 @@
   "permission": "allow",
   "plugin": [
     "oh-my-opencode-slim",
-    "@boopdoopgoop/opencode-btw"
+    "@cortexkit/opencode-magic-context@latest"
   ],
+  "compaction": {
+    "auto": false,
+    "prune": false
+  },
   "lsp": true
 }
