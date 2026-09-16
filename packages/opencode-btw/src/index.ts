@@ -1,4 +1,5 @@
 import type { Config, Hooks, Plugin } from "@opencode-ai/plugin";
+import { createHandoffHooks } from "./handoff";
 
 const BTW_COMMAND = "btw";
 const COMMAND_TEMPLATE = "$ARGUMENTS";
@@ -347,11 +348,27 @@ function createBtwHooks(input: BtwInput): Hooks {
   };
 }
 
-const BtwPlugin: Plugin = async (input) =>
-  createBtwHooks({
+const BtwPlugin: Plugin = async (input) => {
+  const btwHooks = createBtwHooks({
     // The production SDK client is wider than the small surface used here.
     client: input.client as unknown as BtwClient,
     directory: input.directory,
   });
+  const handoffHooks = createHandoffHooks(input);
+
+  return {
+    ...btwHooks,
+    tool: handoffHooks.tool,
+    config: async (config) => {
+      await btwHooks.config?.(config);
+      await handoffHooks.config?.(config);
+    },
+    "command.execute.before": async (command, output) => {
+      await btwHooks["command.execute.before"]?.(command, output);
+      await handoffHooks["command.execute.before"]?.(command, output);
+    },
+  };
+};
 
 export default BtwPlugin;
+export * from "./handoff";

@@ -1,3 +1,4 @@
 opencode/package.json
 opencode/package-lock.json
 opencode/node_modules/
+.DS_Store

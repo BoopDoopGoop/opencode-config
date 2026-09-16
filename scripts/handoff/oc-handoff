@@ -1,0 +1,230 @@
+#!/bin/bash
+
+# Minimal v1 OpenCode handoff client. The session exporter is deliberately an
+# external, configurable boundary: OpenCode Desktop storage is not assumed to
+# be compatible with the cloud CLI.
+
+set -u
+umask 077
+
+PROFILE="${AWS_PROFILE:-henry-admin}"
+REGION="${AWS_REGION:-us-west-2}"
+INSTANCE_ID="${OC_HANDOFF_INSTANCE_ID:-i-05af73c4442480896}"
+CLOUD_USER="${OC_HANDOFF_CLOUD_USER:-developer}"
+CLOUD_HELPER="${OC_HANDOFF_CLOUD_HELPER:-/usr/local/libexec/oc-handoff-cloud}"
+AWS_BIN="${OC_AWS_BIN:-aws}"
+PYTHON_BIN="${OC_PYTHON_BIN:-python3}"
+POLL_INTERVAL="${OC_HANDOFF_POLL_INTERVAL:-2}"
+POLL_ATTEMPTS="${OC_HANDOFF_POLL_ATTEMPTS:-60}"
+
+die() { printf '%s\n' "oc-handoff: $*" >&2; exit 1; }
+
+usage() {
+  cat >&2 <<'EOF'
+Usage:
+  oc-handoff cloud <session-id> --source <local-repo> --destination <cloud-repo>
+  oc-handoff receive <handoff-id> [--output <directory>]
+
+Required for cloud:
+  OC_HANDOFF_BUCKET          Private S3 mailbox bucket
+  OC_LOCAL_SESSION_EXPORTER  Executable exporter (supports --check, then
+                             <session-id> <output-file>)
+EOF
+  exit 2
+}
+
+need_command() { command -v "$1" >/dev/null 2>&1 || die "required command is unavailable: $1"; }
+aws_call() { "$AWS_BIN" --profile "$PROFILE" --region "$REGION" "$@"; }
+valid_id() { [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$ ]]; }
+
+shell_quote() {
+  printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"
+}
+
+sha256_file() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  else
+    sha256sum "$1" | awk '{print $1}'
+  fi
+}
+
+repo_is_clean_and_pushed() {
+  local repo="$1" upstream counts behind ahead
+  [[ -d "$repo/.git" || -f "$repo/.git" ]] || die "not a Git repository: $repo"
+  [[ -z "$(git -C "$repo" status --porcelain 2>/dev/null)" ]] || die "Git repository is not clean: $repo"
+  upstream="$(git -C "$repo" rev-parse --abbrev-ref '@{upstream}' 2>/dev/null)" || die "Git repository has no upstream branch: $repo"
+  counts="$(git -C "$repo" rev-list --left-right --count HEAD..."$upstream" 2>/dev/null)" || die "could not compare Git repository with upstream: $repo"
+  read -r behind ahead <<< "$counts"
+  [[ "$ahead" == "0" ]] || die "Git repository has unpushed commits: $repo"
+  [[ "$behind" == "0" ]] || die "Git repository is behind its upstream: $repo"
+}
+
+validate_json() {
+  "$PYTHON_BIN" - "$1" <<'PY'
+import json
+import sys
+with open(sys.argv[1], "r", encoding="utf-8") as stream:
+    value = json.load(stream)
+if not isinstance(value, (dict, list)):
+    raise SystemExit("JSON document must be an object or array")
+PY
+}
+
+make_manifest() {
+  "$PYTHON_BIN" - "$1" "$2" "$3" "$4" "$5" "$6" "$7" <<'PY'
+import datetime
+import hashlib
+import json
+import os
+import sys
+
+manifest_path, handoff_id, session_id, source_repo, destination_repo, session_path, cloud_user = sys.argv[1:]
+with open(session_path, "rb") as stream:
+    digest = hashlib.sha256(stream.read()).hexdigest()
+manifest = {
+    "schema": "opencode-handoff/v1",
+    "handoff_id": handoff_id,
+    "session_id": session_id,
+    "source_repo": os.path.abspath(source_repo),
+    "destination_repo": destination_repo,
+    "cloud_user": cloud_user,
+    "created_at": datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+    "artifact": "session.json",
+    "sha256": digest,
+}
+with open(manifest_path, "w", encoding="utf-8") as stream:
+    json.dump(manifest, stream, sort_keys=True, separators=(",", ":"))
+    stream.write("\n")
+PY
+  chmod 600 "$1"
+}
+
+wait_for_ssm() {
+  local command_id="$1" status="" attempt
+  for ((attempt = 1; attempt <= POLL_ATTEMPTS; attempt++)); do
+    status="$(aws_call ssm get-command-invocation --command-id "$command_id" \
+      --instance-id "$INSTANCE_ID" --query 'Status' --output text 2>/dev/null)" || status=""
+    case "$status" in
+      Success) return 0 ;;
+      Failed|Cancelled|TimedOut|Cancelling) die "cloud helper failed (SSM status: $status; command: $command_id)" ;;
+    esac
+    sleep "$POLL_INTERVAL"
+  done
+  die "cloud helper timed out (command: $command_id)"
+}
+
+cloud() {
+  local session_id="$1" source_repo="" destination_repo="" bucket exporter
+  shift
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --source) [[ $# -ge 2 ]] || usage; source_repo="$2"; shift 2 ;;
+      --destination) [[ $# -ge 2 ]] || usage; destination_repo="$2"; shift 2 ;;
+      *) usage ;;
+    esac
+  done
+  valid_id "$session_id" || die "invalid session ID"
+  [[ -n "$source_repo" && -n "$destination_repo" ]] || usage
+  [[ "$destination_repo" == /home/developer/workspace/intangibility ]] || die "destination must be /home/developer/workspace/intangibility"
+  bucket="${OC_HANDOFF_BUCKET:-}"
+  [[ -n "$bucket" ]] || die "OC_HANDOFF_BUCKET is not set"
+  [[ "$bucket" =~ ^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$ ]] || die "OC_HANDOFF_BUCKET is not a valid S3 bucket name"
+  exporter="${OC_LOCAL_SESSION_EXPORTER:-}"
+  [[ -n "$exporter" && -x "$exporter" ]] || die "OC_LOCAL_SESSION_EXPORTER must name an executable exporter"
+
+  need_command git
+  need_command "$PYTHON_BIN"
+  need_command "$AWS_BIN"
+  need_command openssl
+  need_command mktemp
+  repo_is_clean_and_pushed "$source_repo"
+
+  # Compatibility preflight: do not inspect or infer Desktop's private session database.
+  "$exporter" --check >/dev/null 2>&1 || die "session exporter compatibility preflight failed"
+
+  local workdir session_path manifest_path handoff_id digest prefix command_id remote_command
+  workdir="$(mktemp -d "${TMPDIR:-/tmp}/oc-handoff.XXXXXX")" || die "could not create a private staging directory"
+  chmod 700 "$workdir"
+  trap 'rm -rf "${workdir:-}"' EXIT HUP INT TERM
+  session_path="$workdir/session.json"
+  manifest_path="$workdir/manifest.json"
+  "$exporter" "$session_id" "$session_path" >/dev/null 2>&1 || die "session exporter failed"
+  [[ -s "$session_path" ]] || die "session exporter produced no session file"
+  chmod 600 "$session_path"
+  validate_json "$session_path" || die "session exporter did not produce valid JSON"
+
+  handoff_id="oc-$(date -u +%Y%m%dT%H%M%SZ)-$(openssl rand -hex 16 2>/dev/null)"
+  valid_id "$handoff_id" || die "could not generate a random handoff ID"
+  make_manifest "$manifest_path" "$handoff_id" "$session_id" "$source_repo" "$destination_repo" "$session_path" "$CLOUD_USER" || die "could not create handoff manifest"
+  digest="$(sha256_file "$session_path")" || die "could not checksum session artifact"
+  [[ -n "$digest" ]] || die "could not checksum session artifact"
+
+  prefix="v1/$handoff_id"
+  aws_call s3api put-object --bucket "$bucket" --key "$prefix/session.json.part" --body "$session_path" --server-side-encryption AES256 >/dev/null || die "could not upload session artifact"
+  aws_call s3api put-object --bucket "$bucket" --key "$prefix/manifest.json.part" --body "$manifest_path" --server-side-encryption AES256 >/dev/null || die "could not upload handoff manifest"
+  aws_call s3api copy-object --bucket "$bucket" --copy-source "$bucket/$prefix/session.json.part" --key "$prefix/session.json" --server-side-encryption AES256 >/dev/null || die "could not publish session artifact"
+  aws_call s3api copy-object --bucket "$bucket" --copy-source "$bucket/$prefix/manifest.json.part" --key "$prefix/manifest.json" --server-side-encryption AES256 >/dev/null || die "could not publish handoff manifest"
+  aws_call s3api put-object --bucket "$bucket" --key "$prefix/ready" --body /dev/null --server-side-encryption AES256 >/dev/null || die "could not publish handoff marker"
+
+  remote_command="$(shell_quote "$CLOUD_HELPER") --bucket $(shell_quote "$bucket") --handoff-id $(shell_quote "$handoff_id") --destination $(shell_quote "$destination_repo") --cloud-user $(shell_quote "$CLOUD_USER")"
+  command_id="$(aws_call ssm send-command --instance-ids "$INSTANCE_ID" --document-name AWS-RunShellScript \
+    --comment "OpenCode handoff $handoff_id" --timeout-seconds 120 --parameters "commands=[\"$remote_command\"]" \
+    --query 'Command.CommandId' --output text 2>/dev/null)" || die "could not send cloud handoff command"
+  [[ -n "$command_id" && "$command_id" != "None" ]] || die "SSM did not return a command ID"
+  wait_for_ssm "$command_id"
+  printf 'Handoff created: %s\n' "$handoff_id"
+}
+
+receive() {
+  local handoff_id="$1" output_dir="${PWD}/.oc-handoff" bucket workdir receipt result
+  shift
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --output) [[ $# -ge 2 ]] || usage; output_dir="$2"; shift 2 ;;
+      *) usage ;;
+    esac
+  done
+  valid_id "$handoff_id" || die "invalid handoff ID"
+  bucket="${OC_HANDOFF_BUCKET:-}"
+  [[ -n "$bucket" ]] || die "OC_HANDOFF_BUCKET is not set"
+  need_command "$AWS_BIN"
+  need_command "$PYTHON_BIN"
+  workdir="$(mktemp -d "${TMPDIR:-/tmp}/oc-handoff-receive.XXXXXX")" || die "could not create a private staging directory"
+  chmod 700 "$workdir"
+  trap 'rm -rf "${workdir:-}"' EXIT HUP INT TERM
+  mkdir -p "$output_dir" || die "could not create output directory"
+  chmod 700 "$output_dir"
+  receipt="$workdir/receipt.json"
+  aws_call s3api get-object --bucket "$bucket" --key "v1/$handoff_id/receipt.json" "$receipt" >/dev/null 2>&1 || die "handoff receipt is not available yet"
+  chmod 600 "$receipt"
+  validate_json "$receipt" || die "cloud receipt is not valid JSON"
+  expected_result_sha="$("$PYTHON_BIN" - "$receipt" <<'PY'
+import json
+import sys
+with open(sys.argv[1], encoding="utf-8") as stream:
+    value = json.load(stream).get("result_sha256")
+print(value or "")
+PY
+)" || die "cloud receipt is not valid JSON"
+  result="$workdir/result.json"
+  if aws_call s3api get-object --bucket "$bucket" --key "v1/$handoff_id/result.json" "$result" >/dev/null 2>&1; then
+    chmod 600 "$result"
+    validate_json "$result" || die "cloud result is not valid JSON"
+    [[ -n "$expected_result_sha" && "$(sha256_file "$result")" == "$expected_result_sha" ]] || die "cloud result checksum mismatch"
+    mv "$result" "$output_dir/$handoff_id-result.json"
+    chmod 600 "$output_dir/$handoff_id-result.json"
+  elif [[ -n "$expected_result_sha" ]]; then
+    die "cloud receipt references an unavailable result"
+  fi
+  mv "$receipt" "$output_dir/$handoff_id-receipt.json"
+  chmod 600 "$output_dir/$handoff_id-receipt.json"
+  printf 'Handoff received in %s\n' "$output_dir"
+}
+
+[[ $# -ge 2 ]] || usage
+case "$1" in
+  cloud) cloud "$2" "${@:3}" ;;
+  receive) receive "$2" "${@:3}" ;;
+  *) usage ;;
+esac
