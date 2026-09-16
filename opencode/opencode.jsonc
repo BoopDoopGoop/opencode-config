@@ -32,8 +32,7 @@
   "permission": "allow",
   "plugin": [
     "oh-my-opencode-slim",
-    "@cortexkit/opencode-magic-context@latest",
-    "@boopdoopgoop/opencode-btw"
+    "@cortexkit/opencode-magic-context@latest"
   ],
   "compaction": {
     "auto": false,
