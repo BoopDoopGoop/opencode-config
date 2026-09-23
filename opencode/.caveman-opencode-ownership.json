@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "integration": "opencode",
+  "entries": {
+    "plugins/caveman": {
+      "installedDigest": "f99f28daaf682d799a257b325b775d583bf7d2d7f814172be592780120ea2353"
+    },
+    "commands/caveman.md": {
+      "installedDigest": "3f501248078369b235b3dd2ba83a7a8c34e015eff4abd46adab6723f667ad2d0"
+    },
+    "commands/caveman-commit.md": {
+      "installedDigest": "6588ca84602e2df819521698f638c110734cabc1faa8c15b465f825a3114dac3"
+    },
+    "commands/caveman-review.md": {
+      "installedDigest": "4abeefc6d5577b10d76d0331153d3e8d76862ae3ef15f11d2280fbb2309f1ee4"
+    },
+    "commands/caveman-compress.md": {
+      "installedDigest": "b236a7e6976e06783b1f4cb60ba15ec4556ed16bb84f253b629ba02536897646"
+    },
+    "commands/caveman-stats.md": {
+      "installedDigest": "305d4c56dd4aa3250a5133ebb060ea02aa0eb93bc6923ed412718753dc8350f1"
+    },
+    "commands/caveman-help.md": {
+      "installedDigest": "72d1243a7dbae87137b13ca9b60a04f5801ca2a44abd27fbf158c6e0813939a6"
+    },
+    "agents/cavecrew-investigator.md": {
+      "installedDigest": "65fd5ef898cd2b6c0b5a9d0f58816320d15f15cabd8e8ef08b37d9d1ff6ffe7b"
+    },
+    "agents/cavecrew-builder.md": {
+      "installedDigest": "176be5674bb6128ef231c8e7a389e7551866bc23c3f9d13a47b92d75ef10c2d3"
+    },
+    "agents/cavecrew-reviewer.md": {
+      "installedDigest": "787c401d0ed6b09639cc08eaa09906e6dbdf392d7da02d630661cc4a2b8c6972"
+    },
+    "skills/caveman": {
+      "installedDigest": "6ace925b0ed7a0c28d842eec4dd446bbc9b03bbabeb145275bb86ef0700440a3"
+    },
+    "skills/caveman-commit": {
+      "installedDigest": "e488a12b9c86a24142af4f9467e3cb416b2e70a700b831893a8f229d1d7afcb5"
+    },
+    "skills/caveman-review": {
+      "installedDigest": "19633b05c6be6b27c38f7a888e75d627a03e6563fdc05d38ed1162e375b0f287"
+    },
+    "skills/caveman-help": {
+      "installedDigest": "5adbfe28a0c0fe9a33ca5c214797923ea6de8790a8571a8768c0199f451a666b"
+    },
+    "skills/caveman-stats": {
+      "installedDigest": "efe8d4f6207132524221b53c0a23444768e39328b0382583504b6f673fd2956d"
+    },
+    "skills/caveman-compress": {
+      "installedDigest": "cec33e93a1f52bc975a08c8a7ae7443b523860242d68e1ced270f241f1afaa6e"
+    },
+    "skills/cavecrew": {
+      "installedDigest": "b54dbccea21bbe964b23d28e651aaa89a70a1b859020dd5ee5826b1c2456af0e"
+    }
+  }
+}
