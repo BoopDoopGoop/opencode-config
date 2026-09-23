@@ -12,10 +12,12 @@ Run from a cloned copy of this repo:
 
 `setup.sh` symlinks the OpenCode configuration into `~/.config/opencode/`.
 It also links the official [Caveman](https://github.com/JuliusBrussee/caveman)
-OpenCode plugin, commands, agents, and rules. Its Caveman skills are linked
-individually, preserving other installed skills. Conflicting files at Caveman
-destinations are left alone; the installer refuses to replace them. OpenCode
-downloads the other plugins listed in `opencode.jsonc` at startup.
+OpenCode plugin, rules, core skill, and `/caveman` command. Other Caveman
+commands, skills, and Cavecrew agents stay in the repository but are not
+activated. The setup script removes their previously managed links, preserves
+unrelated installed skills and commands, and refuses conflicting files at
+Caveman destinations. OpenCode downloads other plugins listed in
+`opencode.jsonc` at startup.
 
 The Caveman files come from the official OpenCode installer, run with
 `XDG_CONFIG_HOME` pointing at this repository. To update them, run the
