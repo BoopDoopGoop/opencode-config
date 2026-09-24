@@ -11,15 +11,6 @@
     "build": {
       "model": "openai/gpt-6-sol-fast",
       "variant": "low"
-    },
-    "explore": {
-      "disable": true
-    },
-    "general": {
-      "disable": true
-    },
-    "orchestrator": {
-      "mode": "subagent"
     }
   },
   "provider": {
@@ -30,14 +21,6 @@
     }
   },
   "permission": "allow",
-  "plugin": [
-    "oh-my-opencode-slim",
-    "@cortexkit/opencode-magic-context@latest",
-    "./plugins/caveman/plugin.js"
-  ],
-  "compaction": {
-    "auto": false,
-    "prune": false
-  },
+  "plugin": [],
   "lsp": true
 }
