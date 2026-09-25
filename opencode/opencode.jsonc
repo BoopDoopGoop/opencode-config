@@ -4,11 +4,11 @@
   "autoupdate": "notify",
   "agent": {
     "plan": {
-      "model": "vercel/openai/gpt-6-sol",
+      "model": "vercel/openai/gpt-6-sol-fast",
       "variant": "low"
     },
     "build": {
-      "model": "vercel/openai/gpt-6-sol",
+      "model": "vercel/openai/gpt-6-sol-fast",
       "variant": "low"
     }
   },
