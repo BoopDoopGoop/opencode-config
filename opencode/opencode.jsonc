@@ -13,6 +13,15 @@
     }
   },
   "provider": {
+    "vercel": {
+      "models": {
+        "openai/gpt-6-sol-fast": {
+          "options": {
+            "reasoningSummary": "auto"
+          }
+        }
+      }
+    },
     "azure": {
       "options": {
         "baseURL": "https://intangibility-resource.services.ai.azure.com/openai/v1"
