@@ -5,11 +5,11 @@
   "autoupdate": "notify",
   "agent": {
     "plan": {
-      "model": "openai/gpt-6-sol-fast",
+      "model": "azure/gpt-6-sol",
       "variant": "low"
     },
     "build": {
-      "model": "openai/gpt-6-sol-fast",
+      "model": "azure/gpt-6-sol",
       "variant": "low"
     }
   },
