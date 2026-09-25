@@ -4,11 +4,11 @@
   "autoupdate": "notify",
   "agent": {
     "plan": {
-      "model": "azure/gpt-6-sol",
+      "model": "vercel/openai/gpt-6-sol",
       "variant": "low"
     },
     "build": {
-      "model": "azure/gpt-6-sol",
+      "model": "vercel/openai/gpt-6-sol",
       "variant": "low"
     }
   },
@@ -20,6 +20,8 @@
     }
   },
   "permission": "allow",
-  "plugin": [],
+  "plugin": [
+    "./plugins/caveman/plugin.js"
+  ],
   "lsp": true
 }

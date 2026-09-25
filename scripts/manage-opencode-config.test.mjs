@@ -4,12 +4,15 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { after, test } from 'node:test';
 
 const script = fileURLToPath(new URL('./manage-opencode-config.mjs', import.meta.url));
 const temp = fs.mkdtempSync(path.join(process.env.OPENCODE_CONFIG_TEST_TMPDIR || os.tmpdir(), 'opencode-config-'));
 after(() => fs.rmSync(temp, { recursive: true, force: true }));
+const cavemanPlugin = './plugins/caveman/plugin.js';
+const cavemanFeatures = ['caveman', 'caveman-commit', 'caveman-review',
+  'caveman-compress', 'caveman-stats', 'caveman-help'];
 
 function fixture(name) {
   const base = path.join(temp, name);
@@ -22,10 +25,24 @@ function fixture(name) {
   for (const name of ['manage-opencode-config.mjs', 'ownership.mjs', 'slim-skills.mjs']) {
     fs.copyFileSync(path.join(path.dirname(script), name), path.join(repo, 'scripts', name));
   }
-  fs.writeFileSync(path.join(repo, 'opencode', 'opencode.jsonc'), JSON.stringify({ plugin: ['oh-my-opencode-slim@2.2.24'] }));
+  fs.writeFileSync(path.join(repo, 'opencode', 'opencode.jsonc'), JSON.stringify({ plugin: ['oh-my-opencode-slim@2.2.24', cavemanPlugin] }));
   fs.writeFileSync(path.join(repo, 'opencode', 'oh-my-opencode-slim.json'), '{}');
   fs.writeFileSync(path.join(repo, 'opencode', 'tui.json'), '{"plugin":["oh-my-opencode-slim@2.2.24"]}');
   fs.writeFileSync(path.join(repo, 'opencode', 'AGENTS.md'), 'Respond tersely.\n');
+  fs.writeFileSync(path.join(repo, 'opencode', 'caveman-config.json'), '{"defaultMode":"ultra"}');
+  const pluginDir = path.join(repo, 'opencode', 'plugins', 'caveman');
+  fs.mkdirSync(pluginDir, { recursive: true });
+  for (const name of ['plugin.js', 'caveman-config.cjs', 'caveman-parse.cjs', 'package.json']) {
+    fs.writeFileSync(path.join(pluginDir, name), 'fixture');
+  }
+  for (const name of cavemanFeatures) {
+    const skill = path.join(repo, 'opencode', 'skills', name);
+    fs.mkdirSync(skill, { recursive: true });
+    fs.writeFileSync(path.join(skill, 'SKILL.md'), 'fixture');
+    const command = path.join(repo, 'opencode', 'commands', `${name}.md`);
+    fs.mkdirSync(path.dirname(command), { recursive: true });
+    fs.writeFileSync(command, 'fixture');
+  }
   return { repo: fs.realpathSync(repo), home, global };
 }
 
@@ -56,13 +73,17 @@ test('fresh setup, repeated setup and disable preserve unrelated files', () => {
   const f = fixture('lifecycle');
   fs.mkdirSync(path.join(f.global, 'commands'), { recursive: true });
   fs.writeFileSync(path.join(f.global, 'commands', 'mine.md'), 'mine');
-  fs.writeFileSync(path.join(f.repo, 'opencode', 'opencode.jsonc'), '{// comment\n"plugin":["oh-my-opencode-slim@2.2.24",],}');
+  fs.writeFileSync(path.join(f.repo, 'opencode', 'opencode.jsonc'), '{// comment\n"plugin":["oh-my-opencode-slim@2.2.24","./plugins/caveman/plugin.js",],}');
   run(f, 'setup');
   run(f, 'setup');
   assert.equal(fs.readlinkSync(path.join(f.global, 'AGENTS.md')), path.join(f.repo, 'opencode', 'AGENTS.md'));
+  assert.equal(fs.readlinkSync(path.join(f.home, '.config/caveman/config.json')),
+    path.join(f.repo, 'opencode', 'caveman-config.json'));
   const skill = addSlimSkill(f);
   assert.throws(() => run(f, 'disable'), /Non-native global configuration remains/);
   assert.equal(fs.existsSync(path.join(f.global, 'AGENTS.md')), false);
+  assert.equal(fs.existsSync(path.join(f.home, '.config/caveman/config.json')), false);
+  assert.equal(fs.existsSync(path.join(f.global, 'skills/caveman')), false);
   assert.equal(fs.existsSync(path.join(f.global, '.opencode-config-owned.json')), false);
   assert.equal(fs.existsSync(skill), false);
   assert.equal(fs.existsSync(path.join(f.home, '.local/share/opencode-config/parked-slim/skills/worktrees/SKILL.md')), true);
@@ -92,20 +113,62 @@ test('removing Slim from repo config parks its skill, then setup restores it', (
   const f = fixture('reconcile');
   run(f, 'setup');
   const skill = addSlimSkill(f);
-  fs.writeFileSync(path.join(f.repo, 'opencode', 'opencode.jsonc'), '{"plugin":[]}');
+  fs.writeFileSync(path.join(f.repo, 'opencode', 'opencode.jsonc'), JSON.stringify({ plugin: [cavemanPlugin] }));
   run(f, 'setup');
   assert.equal(fs.existsSync(skill), false);
   assert.equal(fs.existsSync(path.join(f.home, '.local/share/opencode-config/parked-slim/skills/worktrees/SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(f.global, 'oh-my-opencode-slim.json')), false);
   assert.equal(fs.existsSync(path.join(f.global, 'tui.json')), false);
   assert.equal(fs.existsSync(path.join(f.global, 'AGENTS.md')), true);
-  fs.writeFileSync(path.join(f.repo, 'opencode', 'opencode.jsonc'), '{"plugin":["oh-my-opencode-slim@2.2.24"]}');
+  fs.writeFileSync(path.join(f.repo, 'opencode', 'opencode.jsonc'), JSON.stringify({ plugin: ['oh-my-opencode-slim@2.2.24', cavemanPlugin] }));
   run(f, 'setup');
   assert.equal(fs.existsSync(skill), true);
   assert.equal(fs.existsSync(path.join(f.global, '.oh-my-opencode-slim/skills-manifest.json')), true);
   fs.rmSync(path.join(f.repo, 'opencode', 'AGENTS.md'));
   run(f, 'setup');
   assert.equal(fs.existsSync(path.join(f.global, 'AGENTS.md')), false);
+});
+
+test('removing Caveman from repo config unlinks all of its load paths', () => {
+  const f = fixture('caveman-reconcile');
+  run(f, 'setup');
+  fs.writeFileSync(path.join(f.repo, 'opencode', 'opencode.jsonc'), '{"plugin":["oh-my-opencode-slim@2.2.24"]}');
+  run(f, 'setup');
+  for (const name of cavemanFeatures) {
+    assert.equal(fs.existsSync(path.join(f.global, 'skills', name)), false);
+    assert.equal(fs.existsSync(path.join(f.global, 'commands', `${name}.md`)), false);
+  }
+  assert.equal(fs.existsSync(path.join(f.global, 'plugins/caveman')), false);
+  assert.equal(fs.existsSync(path.join(f.global, 'AGENTS.md')), false);
+  assert.equal(fs.existsSync(path.join(f.home, '.config/caveman/config.json')), false);
+  assert.equal(fs.existsSync(path.join(f.global, 'oh-my-opencode-slim.json')), true);
+});
+
+test('official plugin uses ultra default and injects ultra rules', async () => {
+  const xdg = path.join(temp, 'caveman-plugin-xdg');
+  fs.mkdirSync(path.join(xdg, 'caveman'), { recursive: true });
+  fs.mkdirSync(path.join(xdg, 'opencode'), { recursive: true });
+  fs.copyFileSync(fileURLToPath(new URL('../opencode/caveman-config.json', import.meta.url)),
+    path.join(xdg, 'caveman', 'config.json'));
+  const previousHome = process.env.XDG_CONFIG_HOME;
+  const previousMode = process.env.CAVEMAN_DEFAULT_MODE;
+  process.env.XDG_CONFIG_HOME = xdg;
+  delete process.env.CAVEMAN_DEFAULT_MODE;
+  try {
+    const pluginPath = fileURLToPath(new URL('../opencode/plugins/caveman/plugin.js', import.meta.url));
+    const { default: plugin } = await import(pathToFileURL(pluginPath).href);
+    const hooks = await plugin({});
+    const result = { system: ['base'] };
+    await hooks['experimental.chat.system.transform']({}, result);
+    assert.match(result.system.join('\n'), /CAVEMAN MODE ACTIVE \(ultra\)/);
+    assert.match(result.system.join('\n'), /State each fact once/);
+    assert.doesNotMatch(result.system.join('\n'), /\| \*\*full\*\* \|/);
+  } finally {
+    if (previousHome === undefined) delete process.env.XDG_CONFIG_HOME;
+    else process.env.XDG_CONFIG_HOME = previousHome;
+    if (previousMode === undefined) delete process.env.CAVEMAN_DEFAULT_MODE;
+    else process.env.CAVEMAN_DEFAULT_MODE = previousMode;
+  }
 });
 
 test('modified Slim skills remain byte-for-byte intact across disable and setup', () => {
