@@ -9,11 +9,11 @@ const cavemanCommands = [
   'caveman', 'caveman-commit', 'caveman-review',
   'caveman-compress', 'caveman-stats', 'caveman-help',
 ];
-const researchCommands = ['check-practices', 'grounded-plan'];
+const managedCommands = ['check-practices', 'grounded-plan', 'checkpoint'];
 const knownPaths = new Set([
   'opencode.jsonc', 'oh-my-opencode-slim.json', 'tui.json', 'AGENTS.md', 'caveman-config.json',
   'plugins', 'plugins/caveman', 'agents', 'commands', 'commands/caveman.md',
-  ...[...cavemanCommands, ...researchCommands].map((name) => `commands/${name}.md`),
+  ...[...cavemanCommands, ...managedCommands].map((name) => `commands/${name}.md`),
   ...legacySkills.map((name) => `skills/${name}`),
 ]);
 
@@ -99,9 +99,9 @@ export function desiredLinks(ctx) {
   const slim = Boolean(slimSpec);
   const links = { 'opencode.jsonc': config };
   if (stat(source(ctx, 'AGENTS.md'))?.isFile()) links['AGENTS.md'] = source(ctx, 'AGENTS.md');
-  for (const name of researchCommands) {
+  for (const name of managedCommands) {
     const entry = `commands/${name}.md`;
-    if (!stat(source(ctx, entry))?.isFile()) throw new Error(`Missing research command: ${entry}`);
+    if (!stat(source(ctx, entry))?.isFile()) throw new Error(`Missing command: ${entry}`);
     links[entry] = source(ctx, entry);
   }
   if (slim) {

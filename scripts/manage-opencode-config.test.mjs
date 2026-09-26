@@ -12,7 +12,7 @@ const temp = fs.mkdtempSync(path.join(process.env.OPENCODE_CONFIG_TEST_TMPDIR ||
 after(() => fs.rmSync(temp, { recursive: true, force: true }));
 const cavemanFeatures = ['caveman', 'caveman-commit', 'caveman-review',
   'caveman-compress', 'caveman-stats', 'caveman-help'];
-const researchCommands = ['check-practices', 'grounded-plan'];
+const managedCommands = ['check-practices', 'grounded-plan', 'checkpoint'];
 
 function fixture(name) {
   const base = path.join(temp, name);
@@ -30,7 +30,7 @@ function fixture(name) {
   fs.writeFileSync(path.join(repo, 'opencode', 'tui.json'), '{"plugin":["oh-my-opencode-slim@2.2.24"]}');
   fs.writeFileSync(path.join(repo, 'opencode', 'AGENTS.md'), 'Respond tersely.\n');
   fs.mkdirSync(path.join(repo, 'opencode', 'commands'), { recursive: true });
-  for (const name of researchCommands) {
+  for (const name of managedCommands) {
     fs.writeFileSync(path.join(repo, 'opencode', 'commands', `${name}.md`), 'fixture');
   }
   return { repo: fs.realpathSync(repo), home, global };
@@ -66,7 +66,7 @@ test('fresh setup, repeated setup and disable preserve unrelated files', () => {
   fs.writeFileSync(path.join(f.repo, 'opencode', 'opencode.jsonc'), '{// comment\n"plugin":["oh-my-opencode-slim@2.2.24",],}');
   run(f, 'setup');
   run(f, 'setup');
-  for (const name of researchCommands) {
+  for (const name of managedCommands) {
     assert.equal(fs.readlinkSync(path.join(f.global, 'commands', `${name}.md`)),
       path.join(f.repo, 'opencode', 'commands', `${name}.md`));
   }
@@ -78,7 +78,7 @@ test('fresh setup, repeated setup and disable preserve unrelated files', () => {
   assert.equal(fs.existsSync(skill), false);
   assert.equal(fs.existsSync(path.join(f.home, '.local/share/opencode-config/parked-slim/skills/worktrees/SKILL.md')), true);
   assert.equal(fs.readFileSync(path.join(f.global, 'commands', 'mine.md'), 'utf8'), 'mine');
-  for (const name of researchCommands) {
+  for (const name of managedCommands) {
     assert.equal(fs.existsSync(path.join(f.global, 'commands', `${name}.md`)), false);
   }
 });
@@ -151,7 +151,7 @@ test('setup unlinks previously owned Caveman paths but retains global style rule
   }
   assert.equal(fs.readlinkSync(path.join(f.global, 'AGENTS.md')), path.join(f.repo, 'opencode', 'AGENTS.md'));
   assert.equal(fs.existsSync(path.join(f.global, 'oh-my-opencode-slim.json')), true);
-  for (const name of researchCommands) {
+  for (const name of managedCommands) {
     assert.equal(fs.existsSync(path.join(f.global, 'commands', `${name}.md`)), true);
   }
 });

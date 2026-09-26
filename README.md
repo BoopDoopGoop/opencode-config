@@ -12,7 +12,7 @@ repo, then restart OpenCode Desktop:
 ```
 
 `setup.sh` links this repo's OpenCode configuration, global `AGENTS.md`,
-`/check-practices`, and `/grounded-plan` into `~/.config/opencode/`.
+`/check-practices`, `/grounded-plan`, and `/checkpoint` into `~/.config/opencode/`.
 `AGENTS.md` provides the always-on terse writing style. Slim remains disabled;
 its settings stay in the repo and its skills stay parked until Slim is enabled
 again.
