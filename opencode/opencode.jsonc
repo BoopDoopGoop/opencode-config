@@ -29,8 +29,6 @@
     }
   },
   "permission": "allow",
-  "plugin": [
-    "./plugins/caveman/plugin.js"
-  ],
+  "plugin": [],
   "lsp": true
 }

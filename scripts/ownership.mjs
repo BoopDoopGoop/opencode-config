@@ -9,11 +9,11 @@ const cavemanCommands = [
   'caveman', 'caveman-commit', 'caveman-review',
   'caveman-compress', 'caveman-stats', 'caveman-help',
 ];
-const cavemanSkills = legacySkills.filter((name) => name !== 'cavecrew');
+const researchCommands = ['check-practices', 'grounded-plan'];
 const knownPaths = new Set([
   'opencode.jsonc', 'oh-my-opencode-slim.json', 'tui.json', 'AGENTS.md', 'caveman-config.json',
   'plugins', 'plugins/caveman', 'agents', 'commands', 'commands/caveman.md',
-  ...cavemanCommands.map((name) => `commands/${name}.md`),
+  ...[...cavemanCommands, ...researchCommands].map((name) => `commands/${name}.md`),
   ...legacySkills.map((name) => `skills/${name}`),
 ]);
 
@@ -97,28 +97,12 @@ export function desiredLinks(ctx) {
   const slimSpec = plugins.find((entry) => typeof entry === 'string' &&
     /^oh-my-opencode-slim(?:@[^/]+)?$/.test(entry));
   const slim = Boolean(slimSpec);
-  const caveman = plugins.includes('./plugins/caveman/plugin.js');
   const links = { 'opencode.jsonc': config };
-  if (caveman) {
-    const pluginDir = source(ctx, 'plugins/caveman');
-    for (const file of ['plugin.js', 'caveman-config.cjs', 'caveman-parse.cjs', 'package.json']) {
-      if (!stat(path.join(pluginDir, file))?.isFile()) throw new Error(`Missing Caveman plugin file: ${file}`);
-    }
-    links['plugins/caveman'] = pluginDir;
-    for (const name of cavemanCommands) {
-      const entry = `commands/${name}.md`;
-      if (!stat(source(ctx, entry))?.isFile()) throw new Error(`Missing Caveman command: ${entry}`);
-      links[entry] = source(ctx, entry);
-    }
-    for (const name of cavemanSkills) {
-      const entry = `skills/${name}`;
-      if (!stat(source(ctx, `${entry}/SKILL.md`))?.isFile()) throw new Error(`Missing Caveman skill: ${entry}`);
-      links[entry] = source(ctx, entry);
-    }
-    const modeConfig = source(ctx, 'caveman-config.json');
-    if (!stat(modeConfig)?.isFile()) throw new Error(`Missing Caveman mode config: ${modeConfig}`);
-    links['caveman-config.json'] = modeConfig;
-    if (stat(source(ctx, 'AGENTS.md'))?.isFile()) links['AGENTS.md'] = source(ctx, 'AGENTS.md');
+  if (stat(source(ctx, 'AGENTS.md'))?.isFile()) links['AGENTS.md'] = source(ctx, 'AGENTS.md');
+  for (const name of researchCommands) {
+    const entry = `commands/${name}.md`;
+    if (!stat(source(ctx, entry))?.isFile()) throw new Error(`Missing research command: ${entry}`);
+    links[entry] = source(ctx, entry);
   }
   if (slim) {
     const settings = source(ctx, 'oh-my-opencode-slim.json');
