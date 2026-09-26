@@ -12,7 +12,7 @@ const temp = fs.mkdtempSync(path.join(process.env.OPENCODE_CONFIG_TEST_TMPDIR ||
 after(() => fs.rmSync(temp, { recursive: true, force: true }));
 const cavemanFeatures = ['caveman', 'caveman-commit', 'caveman-review',
   'caveman-compress', 'caveman-stats', 'caveman-help'];
-const managedCommands = ['check-practices', 'grounded-plan', 'checkpoint'];
+const managedCommands = ['ground', 'plan', 'checkpoint'];
 
 function fixture(name) {
   const base = path.join(temp, name);
@@ -80,6 +80,28 @@ test('fresh setup, repeated setup and disable preserve unrelated files', () => {
   assert.equal(fs.readFileSync(path.join(f.global, 'commands', 'mine.md'), 'utf8'), 'mine');
   for (const name of managedCommands) {
     assert.equal(fs.existsSync(path.join(f.global, 'commands', `${name}.md`)), false);
+  }
+});
+
+test('setup replaces previously owned command names', () => {
+  const f = fixture('renamed-commands');
+  run(f, 'setup');
+  const manifestPath = path.join(f.global, '.opencode-config-owned.json');
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  for (const name of ['check-practices', 'grounded-plan']) {
+    const entry = `commands/${name}.md`;
+    const oldSource = path.join(f.repo, 'opencode', entry);
+    fs.writeFileSync(oldSource, 'old command');
+    fs.symlinkSync(oldSource, path.join(f.global, entry));
+    manifest.links[entry] = oldSource;
+  }
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest));
+  run(f, 'setup');
+  for (const name of ['check-practices', 'grounded-plan']) {
+    assert.equal(fs.existsSync(path.join(f.global, 'commands', `${name}.md`)), false);
+  }
+  for (const name of managedCommands) {
+    assert.equal(fs.existsSync(path.join(f.global, 'commands', `${name}.md`)), true);
   }
 });
 

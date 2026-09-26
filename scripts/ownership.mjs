@@ -9,10 +9,11 @@ const cavemanCommands = [
   'caveman', 'caveman-commit', 'caveman-review',
   'caveman-compress', 'caveman-stats', 'caveman-help',
 ];
-const managedCommands = ['check-practices', 'grounded-plan', 'checkpoint'];
+const managedCommands = ['ground', 'plan', 'checkpoint'];
 const knownPaths = new Set([
   'opencode.jsonc', 'oh-my-opencode-slim.json', 'tui.json', 'AGENTS.md', 'caveman-config.json',
   'plugins', 'plugins/caveman', 'agents', 'commands', 'commands/caveman.md',
+  'commands/check-practices.md', 'commands/grounded-plan.md',
   ...[...cavemanCommands, ...managedCommands].map((name) => `commands/${name}.md`),
   ...legacySkills.map((name) => `skills/${name}`),
 ]);
