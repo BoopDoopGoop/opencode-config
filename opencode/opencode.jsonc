@@ -30,5 +30,12 @@
   },
   "permission": "allow",
   "plugin": [],
+  "mcp": {
+    "playwright": {
+      "type": "local",
+      "command": ["npx", "-y", "@playwright/mcp@latest", "--browser", "chromium", "--user-data-dir", "/Users/henrycen/Library/Caches/ms-playwright-mcp/agent-browser-profile"],
+      "enabled": true
+    }
+  },
   "lsp": true
 }
