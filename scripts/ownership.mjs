@@ -11,7 +11,7 @@ const cavemanCommands = [
 ];
 const managedCommands = ['ground', 'plan', 'checkpoint'];
 const knownPaths = new Set([
-  'opencode.jsonc', 'oh-my-opencode-slim.json', 'tui.json', 'AGENTS.md', 'caveman-config.json',
+  'opencode.jsonc', 'AGENTS.md', 'caveman-config.json',
   'plugins', 'plugins/caveman', 'agents', 'commands', 'commands/caveman.md',
   'commands/check-practices.md', 'commands/grounded-plan.md',
   ...[...cavemanCommands, ...managedCommands].map((name) => `commands/${name}.md`),
@@ -91,37 +91,12 @@ export function loadOwnership(ctx) {
 export function desiredLinks(ctx) {
   const config = source(ctx, 'opencode.jsonc');
   if (!stat(config)?.isFile()) throw new Error(`Missing configuration: ${config}`);
-  let plugins;
-  try { plugins = json(config).plugin ?? []; }
-  catch (error) { throw new Error(`Cannot parse ${config}: ${error.message}`); }
-  if (!Array.isArray(plugins)) throw new Error('plugin must be an array');
-  const slimSpec = plugins.find((entry) => typeof entry === 'string' &&
-    /^oh-my-opencode-slim(?:@[^/]+)?$/.test(entry));
-  const slim = Boolean(slimSpec);
   const links = { 'opencode.jsonc': config };
   if (stat(source(ctx, 'AGENTS.md'))?.isFile()) links['AGENTS.md'] = source(ctx, 'AGENTS.md');
   for (const name of managedCommands) {
     const entry = `commands/${name}.md`;
     if (!stat(source(ctx, entry))?.isFile()) throw new Error(`Missing command: ${entry}`);
     links[entry] = source(ctx, entry);
-  }
-  if (slim) {
-    const settings = source(ctx, 'oh-my-opencode-slim.json');
-    if (!stat(settings)?.isFile()) throw new Error(`Missing Slim settings: ${settings}`);
-    links['oh-my-opencode-slim.json'] = settings;
-  }
-  if (stat(source(ctx, 'tui.json'))) {
-    const badge = json(source(ctx, 'tui.json')).plugin ?? [];
-    if (!Array.isArray(badge)) throw new Error('TUI plugin must be an array');
-    const slimBadge = badge.filter((entry) => typeof entry === 'string' &&
-      /^oh-my-opencode-slim(?:@[^/]+)?$/.test(entry));
-    if (slim && (slimBadge.length !== 1 || slimBadge[0] !== slimSpec)) {
-      throw new Error('Slim plugin and TUI version entries disagree');
-    }
-    if (!slim && slimBadge.length && badge.length !== slimBadge.length) {
-      throw new Error('Remove Slim from TUI config while preserving other TUI plugins');
-    }
-    if (slim || badge.length > slimBadge.length) links['tui.json'] = source(ctx, 'tui.json');
   }
   return links;
 }
@@ -187,7 +162,7 @@ export function saveOwnership(ctx, desired) {
 export function auditGlobal(ctx) {
   const leftover = [];
   for (const name of ['opencode.json', 'opencode.jsonc', 'opencode.jsonc.bak', 'AGENTS.md',
-    'oh-my-opencode-slim.json', 'tui.json', 'package.json', 'package-lock.json']) {
+    'package.json', 'package-lock.json']) {
     const file = destination(ctx, name);
     // Backup, npm dependencies, and lock files are inert without configuration.
     if (!['opencode.jsonc.bak', 'package.json', 'package-lock.json'].includes(name) && stat(file)) leftover.push(file);
