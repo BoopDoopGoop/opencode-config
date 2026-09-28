@@ -9,7 +9,7 @@ const cavemanCommands = [
   'caveman', 'caveman-commit', 'caveman-review',
   'caveman-compress', 'caveman-stats', 'caveman-help',
 ];
-const managedCommands = ['ground', 'plan', 'checkpoint'];
+const managedCommands = ['ground', 'plan', 'implement', 'checkpoint'];
 const knownPaths = new Set([
   'opencode.jsonc', 'AGENTS.md', 'caveman-config.json',
   'plugins', 'plugins/caveman', 'agents', 'commands', 'commands/caveman.md',

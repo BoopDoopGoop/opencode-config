@@ -11,7 +11,7 @@ const temp = fs.mkdtempSync(path.join(process.env.OPENCODE_CONFIG_TEST_TMPDIR ||
 after(() => fs.rmSync(temp, { recursive: true, force: true }));
 const cavemanFeatures = ['caveman', 'caveman-commit', 'caveman-review',
   'caveman-compress', 'caveman-stats', 'caveman-help'];
-const managedCommands = ['ground', 'plan', 'checkpoint'];
+const managedCommands = ['ground', 'plan', 'implement', 'checkpoint'];
 
 function fixture(name) {
   const base = path.join(temp, name);

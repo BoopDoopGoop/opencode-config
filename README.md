@@ -12,7 +12,7 @@ repo, then restart OpenCode Desktop:
 ```
 
 `setup.sh` links this repo's OpenCode configuration, global `AGENTS.md`,
-`/ground`, `/plan`, and `/checkpoint` into `~/.config/opencode/`.
+`/ground`, `/plan`, `/implement`, and `/checkpoint` into `~/.config/opencode/`.
 `AGENTS.md` provides the always-on terse writing style.
 
 Setup records owned links in
