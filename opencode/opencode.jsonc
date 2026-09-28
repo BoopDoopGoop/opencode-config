@@ -33,7 +33,7 @@
   "mcp": {
     "playwright": {
       "type": "local",
-      "command": ["npx", "-y", "@playwright/mcp@latest", "--browser", "chromium", "--user-data-dir", "/Users/henrycen/Library/Caches/ms-playwright-mcp/agent-browser-profile"],
+      "command": ["npx", "-y", "@playwright/mcp@latest", "--browser", "chromium", "--user-data-dir", "/Users/henrycen/Library/Caches/ms-playwright-mcp/agent-browser-profile", "--idle-timeout", "300000"],
       "enabled": true
     }
   },
