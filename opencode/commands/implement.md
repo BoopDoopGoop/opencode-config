@@ -1,4 +1,4 @@
 ---
 description: Implement the plan through supervised subagents
 ---
-Implement the plan through subagents. Assign each workstream to one subagent; use multiple only when parallel work saves time. Keep scopes separate and the todo list current. Review each task against the plan, project patterns, and relevant online sources. Correct drift and overengineering; prefer standard solutions over custom code. If a consequential design choice lacks a clear standard or project precedent, explain options and ask before proceeding. Run relevant checks for each task, then mark it complete. Report results.
+Implement the agreed plan through subagents assigned to its workstreams. Keep scopes separate and the todo list current. Review work against the plan, project patterns, and relevant online sources; correct drift and overengineering. Prefer standard solutions over custom code. Ask before consequential design choices with no clear standard or project precedent. Check each task, mark it complete when verified, and report results.
