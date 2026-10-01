@@ -4,24 +4,15 @@
   "autoupdate": "notify",
   "agent": {
     "plan": {
-      "model": "vercel/openai/gpt-6-sol-fast",
+      "model": "openai/gpt-6.1-sol-fast",
       "variant": "low"
     },
     "build": {
-      "model": "vercel/openai/gpt-6-sol-fast",
+      "model": "openai/gpt-6.1-sol-fast",
       "variant": "low"
     }
   },
   "provider": {
-    "vercel": {
-      "models": {
-        "openai/gpt-6-sol-fast": {
-          "options": {
-            "reasoningSummary": "auto"
-          }
-        }
-      }
-    },
     "azure": {
       "options": {
         "baseURL": "https://intangibility-resource.services.ai.azure.com/openai/v1"
